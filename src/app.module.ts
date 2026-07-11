@@ -5,6 +5,7 @@ import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
 import jwtConfig from './config/jwt.config';
 import { validateEnv } from './config/env.config';
+import { SharedModule } from './shared/shared.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { validateEnv } from './config/env.config';
       load: [appConfig, databaseConfig, jwtConfig],
     }),
     PrismaModule,
+    SharedModule,
   ],
   controllers: [],
   providers: [],

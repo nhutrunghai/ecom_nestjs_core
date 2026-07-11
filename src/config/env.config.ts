@@ -8,6 +8,14 @@ export const envSchema = z.object({
     .max(65535, { message: 'PORT must be less than or equal to 65535' })
     .default(3000),
   DATABASE_URL: z.string().min(1, { message: 'DATABASE_URL is required' }),
+  ADMIN_EMAIL: z.email({ message: 'ADMIN_EMAIL must be a valid email' }),
+  ADMIN_NAME: z.string().min(1, { message: 'ADMIN_NAME is required' }),
+  ADMIN_PASSWORD: z
+    .string()
+    .min(8, { message: 'ADMIN_PASSWORD must be at least 8 characters' }),
+  ADMIN_PHONE_NUMBER: z
+    .string()
+    .min(1, { message: 'ADMIN_PHONE_NUMBER is required' }),
 });
 
 type EnvSchema = z.infer<typeof envSchema>;
