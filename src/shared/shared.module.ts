@@ -1,7 +1,9 @@
-import { Module } from '@nestjs/common';
+﻿import { Global, Module } from '@nestjs/common';
 import { HashingModule } from './hashing/hashing.module';
 
+@Global()
 @Module({
-  imports: [HashingModule]
+  imports: [HashingModule],
+  exports: [HashingModule],
 })
 export class SharedModule {}
