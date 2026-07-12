@@ -1,4 +1,4 @@
-import { UserStatus } from 'generated/prisma/client';
+import { UserStatus, VerificationCodeType } from 'generated/prisma/client';
 import { z } from 'zod';
 
 export const UserSchema = z.object({
@@ -33,6 +33,7 @@ export const RegisterBodySchema = UserSchema.pick({
     confirmPassword: z
       .string()
       .min(8, { message: 'Confirm password is required' }),
+    code: z.string().regex(/^\d{6}$/, { message: 'OTP code must be 6 digits' }),
   })
   .strict()
   .superRefine((data, ctx) => {
@@ -70,6 +71,22 @@ export const RefreshTokenBodySchema = z
 
 export const RefreshTokenResponseSchema = AuthTokenSchema;
 
+export const SendOtpBodySchema = z
+  .object({
+    email: z.string().email({ message: 'Email must be a valid email' }),
+    type: z.enum([
+      VerificationCodeType.REGISTER,
+      VerificationCodeType.FORGOT_PASSWORD,
+      VerificationCodeType.LOGIN,
+      VerificationCodeType.DISABLE_2FA,
+    ]),
+  })
+  .strict();
+
+export const SendOtpResponseSchema = z.object({
+  message: z.string(),
+});
+
 export type UserModel = z.infer<typeof UserSchema>;
 
 export type UserResponse = z.infer<typeof UserResponseSchema>;
@@ -85,3 +102,7 @@ export type LoginResponse = z.infer<typeof LoginResponseSchema>;
 export type RefreshTokenBody = z.infer<typeof RefreshTokenBodySchema>;
 
 export type RefreshTokenResponse = z.infer<typeof RefreshTokenResponseSchema>;
+
+export type SendOtpBody = z.infer<typeof SendOtpBodySchema>;
+
+export type SendOtpResponse = z.infer<typeof SendOtpResponseSchema>;

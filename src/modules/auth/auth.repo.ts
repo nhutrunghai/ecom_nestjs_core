@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { VerificationCodeType } from 'generated/prisma/client';
 import { PrismaService } from 'src/database/prisma.service';
 import { RegisterBody } from './entities/auth.model';
 
@@ -38,6 +39,56 @@ export class AuthRepository {
     return this.prismaService.user.findUnique({
       where: {
         email,
+      },
+    });
+  }
+
+  upsertVerificationCode(data: {
+    email: string;
+    code: string;
+    type: VerificationCodeType;
+    expiresAt: Date;
+  }) {
+    return this.prismaService.verificationCode.upsert({
+      where: {
+        email_type: {
+          email: data.email,
+          type: data.type,
+        },
+      },
+      create: data,
+      update: {
+        code: data.code,
+        expiresAt: data.expiresAt,
+        createdAt: new Date(),
+      },
+    });
+  }
+
+  findValidVerificationCode(data: {
+    email: string;
+    code: string;
+    type: VerificationCodeType;
+  }) {
+    return this.prismaService.verificationCode.findFirst({
+      where: {
+        email: data.email,
+        code: data.code,
+        type: data.type,
+        expiresAt: {
+          gt: new Date(),
+        },
+      },
+    });
+  }
+
+  deleteVerificationCode(data: { email: string; type: VerificationCodeType }) {
+    return this.prismaService.verificationCode.delete({
+      where: {
+        email_type: {
+          email: data.email,
+          type: data.type,
+        },
       },
     });
   }

@@ -1,4 +1,4 @@
-﻿import 'dotenv/config';
+import 'dotenv/config';
 import { z } from 'zod';
 
 export const envSchema = z.object({
@@ -11,22 +11,19 @@ export const envSchema = z.object({
     .max(65535, { message: 'PORT must be less than or equal to 65535' })
     .default(3000),
   DATABASE_URL: z.string().min(1, { message: 'DATABASE_URL is required' }),
-  JWT_ACCESS_TOKEN_SECRET: z
-    .string()
-    .min(32, {
-      message: 'JWT_ACCESS_TOKEN_SECRET must be at least 32 characters',
-    }),
-  JWT_REFRESH_TOKEN_SECRET: z
-    .string()
-    .min(32, {
-      message: 'JWT_REFRESH_TOKEN_SECRET must be at least 32 characters',
-    }),
+  JWT_ACCESS_TOKEN_SECRET: z.string().min(32, {
+    message: 'JWT_ACCESS_TOKEN_SECRET must be at least 32 characters',
+  }),
+  JWT_REFRESH_TOKEN_SECRET: z.string().min(32, {
+    message: 'JWT_REFRESH_TOKEN_SECRET must be at least 32 characters',
+  }),
   JWT_ACCESS_TOKEN_EXPIRES_IN: z
     .string()
     .min(1, { message: 'JWT_ACCESS_TOKEN_EXPIRES_IN is required' }),
   JWT_REFRESH_TOKEN_EXPIRES_IN: z
     .string()
     .min(1, { message: 'JWT_REFRESH_TOKEN_EXPIRES_IN is required' }),
+  OTP_EXPIRES_IN: z.string().min(1, { message: 'OTP_EXPIRES_IN is required' }),
   ADMIN_EMAIL: z.email({ message: 'ADMIN_EMAIL must be a valid email' }),
   ADMIN_NAME: z.string().min(1, { message: 'ADMIN_NAME is required' }),
   ADMIN_PASSWORD: z

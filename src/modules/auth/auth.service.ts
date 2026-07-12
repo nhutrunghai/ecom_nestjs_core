@@ -1,16 +1,21 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { UserStatus } from 'generated/prisma/client';
+import { addMilliseconds } from 'date-fns';
+import { UserStatus, VerificationCodeType } from 'generated/prisma/client';
+import ms, { StringValue } from 'ms';
+import env from 'src/config/env.config';
 import {
   isPrismaErrorCode,
   PrismaErrorCode,
 } from 'src/database/prisma-error.util';
 import { HashingService } from 'src/shared/hashing/hashing.service';
+import { generateOtpCode } from 'src/shared/helpers';
 import { JwtTokenService } from 'src/shared/jwt/jwt-token.service';
 import { AuthRepository } from './auth.repo';
 import {
@@ -18,6 +23,7 @@ import {
   LoginBody,
   RefreshTokenBody,
   RegisterBody,
+  SendOtpBody,
 } from './entities/auth.model';
 import { RoleService } from './role.service';
 
@@ -32,12 +38,56 @@ export class AuthService {
     private readonly authRepository: AuthRepository,
   ) {}
 
+  async sendOtp(body: SendOtpBody) {
+    const code = generateOtpCode();
+    const otpExpiresInMs = ms(env.OTP_EXPIRES_IN as StringValue);
+
+    if (typeof otpExpiresInMs !== 'number') {
+      throw new InternalServerErrorException('Invalid OTP expiration config');
+    }
+
+    const expiresAt = addMilliseconds(new Date(), otpExpiresInMs);
+
+    await this.authRepository.upsertVerificationCode({
+      email: body.email,
+      type: body.type,
+      code,
+      expiresAt,
+    });
+
+    return {
+      message: 'OTP code sent successfully',
+    };
+  }
+
   async register(body: RegisterBody) {
     try {
+      const verificationCode =
+        await this.authRepository.findValidVerificationCode({
+          email: body.email,
+          code: body.code,
+          type: VerificationCodeType.REGISTER,
+        });
+
+      if (!verificationCode) {
+        throw new BadRequestException('Invalid or expired OTP code');
+      }
+
       const hashedPassword = await this.hashingService.hash(body.password);
       const roleId = await this.roleService.getClientId();
 
-      return this.authRepository.createUser(body, hashedPassword, roleId);
+      const user = await this.authRepository.createUser(
+        body,
+        hashedPassword,
+        roleId,
+      );
+
+      await this.authRepository.deleteVerificationCode({
+        email: body.email,
+        type: VerificationCodeType.REGISTER,
+      });
+
+      return user;
     } catch (error) {
       if (isPrismaErrorCode(error, PrismaErrorCode.UniqueConstraintFailed)) {
         throw new ConflictException('Email already exists');

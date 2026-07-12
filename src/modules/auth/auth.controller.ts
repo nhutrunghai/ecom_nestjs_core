@@ -8,11 +8,19 @@ import {
   RefreshTokenResponseDto,
   RegisterDto,
   RegisterResponseDto,
+  SendOtpDto,
+  SendOtpResponseDto,
 } from './dto/auth.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Post('otp')
+  @ZodSerializerDto(SendOtpResponseDto)
+  sendOtp(@Body() body: SendOtpDto) {
+    return this.authService.sendOtp(body);
+  }
 
   @Post('register')
   @ZodSerializerDto(RegisterResponseDto)

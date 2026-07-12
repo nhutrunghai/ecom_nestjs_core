@@ -5,6 +5,8 @@ import {
   RefreshTokenBodySchema,
   RefreshTokenResponseSchema,
   RegisterBodySchema,
+  SendOtpBodySchema,
+  SendOtpResponseSchema,
   UserResponseSchema,
 } from '../entities/auth.model';
 
@@ -21,3 +23,7 @@ export class RefreshTokenDto extends createZodDto(RefreshTokenBodySchema) {}
 export class RefreshTokenResponseDto extends createZodDto(
   RefreshTokenResponseSchema,
 ) {}
+
+export class SendOtpDto extends createZodDto(SendOtpBodySchema) {}
+
+export class SendOtpResponseDto extends createZodDto(SendOtpResponseSchema) {}
