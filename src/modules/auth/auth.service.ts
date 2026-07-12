@@ -5,7 +5,6 @@ import {
   InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
 import { UserStatus } from 'generated/prisma/client';
 import {
   isPrismaErrorCode,
@@ -138,7 +137,6 @@ export class AuthService {
       }),
       this.jwtTokenService.signRefreshToken({
         sub: userId,
-        jti: randomUUID(),
       }),
     ]);
 

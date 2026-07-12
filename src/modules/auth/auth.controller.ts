@@ -1,4 +1,4 @@
-﻿import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { ZodSerializerDto } from 'nestjs-zod';
 import { AuthService } from './auth.service';
 import {
