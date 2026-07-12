@@ -1,7 +1,8 @@
-import { z } from 'zod';
+﻿import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
 import { UserStatus } from 'generated/prisma/client';
-const UserReponseSchema = z.object({
+
+const UserResponseSchema = z.object({
   id: z.number(),
   email: z.string().email(),
   name: z.string(),
@@ -15,8 +16,10 @@ const UserReponseSchema = z.object({
   createdAt: z.date(),
   updatedAt: z.date(),
 });
-export class UserResponseDto extends createZodDto(UserReponseSchema) {}
-const registerDtoSchema = z
+
+export class UserResponseDto extends createZodDto(UserResponseSchema) {}
+
+const RegisterDtoSchema = z
   .object({
     name: z.string().min(1, { message: 'Name is required' }),
     email: z.string().email({ message: 'Email must be a valid email' }),
@@ -38,5 +41,26 @@ const registerDtoSchema = z
       });
     }
   });
- export type RegisterBody = z.infer<typeof registerDtoSchema>;
-export class RegisterDto extends createZodDto(registerDtoSchema) {}
+
+export type RegisterBody = z.infer<typeof RegisterDtoSchema>;
+
+export class RegisterDto extends createZodDto(RegisterDtoSchema) {}
+
+const LoginDtoSchema = z
+  .object({
+    email: z.string().email({ message: 'Email must be a valid email' }),
+    password: z.string().min(1, { message: 'Password is required' }),
+  })
+  .strict();
+
+export type LoginBody = z.infer<typeof LoginDtoSchema>;
+
+export class LoginDto extends createZodDto(LoginDtoSchema) {}
+
+const LoginResponseSchema = z.object({
+  accessToken: z.string(),
+  refreshToken: z.string(),
+  user: UserResponseSchema,
+});
+
+export class LoginResponseDto extends createZodDto(LoginResponseSchema) {}
