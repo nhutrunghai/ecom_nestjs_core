@@ -10,60 +10,34 @@ import {
   isPrismaErrorCode,
   PrismaErrorCode,
 } from 'src/database/prisma-error.util';
-import { PrismaService } from 'src/database/prisma.service';
 import { HashingService } from 'src/shared/hashing/hashing.service';
 import { JwtTokenService } from 'src/shared/jwt/jwt-token.service';
-import { LoginBody, RefreshTokenBody, RegisterBody } from './auth.dto';
+import { AuthRepository } from './auth.repo';
+import {
+  AuthTokens,
+  LoginBody,
+  RefreshTokenBody,
+  RegisterBody,
+} from './entities/auth.model';
 import { RoleService } from './role.service';
 
-type AuthTokens = {
-  accessToken: string;
-  refreshToken: string;
-};
-
 const DEFAULT_DEVICE_ID = 2;
-
-const userResponseSelect = {
-  id: true,
-  email: true,
-  name: true,
-  phoneNumber: true,
-  avatar: true,
-  status: true,
-  roleId: true,
-  createdById: true,
-  updatedById: true,
-  deletedAt: true,
-  createdAt: true,
-  updatedAt: true,
-} as const;
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly hashingService: HashingService,
-    private readonly prismaService: PrismaService,
     private readonly roleService: RoleService,
     private readonly jwtTokenService: JwtTokenService,
+    private readonly authRepository: AuthRepository,
   ) {}
 
   async register(body: RegisterBody) {
     try {
       const hashedPassword = await this.hashingService.hash(body.password);
-      const roleID = await this.roleService.getClientId();
+      const roleId = await this.roleService.getClientId();
 
-      const user = await this.prismaService.user.create({
-        data: {
-          email: body.email,
-          password: hashedPassword,
-          name: body.name,
-          phoneNumber: body.phoneNumber,
-          roleId: roleID,
-        },
-        select: userResponseSelect,
-      });
-
-      return user;
+      return this.authRepository.createUser(body, hashedPassword, roleId);
     } catch (error) {
       if (isPrismaErrorCode(error, PrismaErrorCode.UniqueConstraintFailed)) {
         throw new ConflictException('Email already exists');
@@ -74,11 +48,7 @@ export class AuthService {
   }
 
   async login(body: LoginBody) {
-    const user = await this.prismaService.user.findUnique({
-      where: {
-        email: body.email,
-      },
-    });
+    const user = await this.authRepository.findUserByEmail(body.email);
 
     if (!user) {
       throw new UnauthorizedException('Invalid email or password');
@@ -98,13 +68,7 @@ export class AuthService {
     }
 
     const tokens = await this.generateTokens(user.id);
-
-    const safeUser = await this.prismaService.user.findUniqueOrThrow({
-      where: {
-        id: user.id,
-      },
-      select: userResponseSelect,
-    });
+    const { password, totpSecret, ...safeUser } = user;
 
     return {
       ...tokens,
@@ -118,11 +82,7 @@ export class AuthService {
         body.refreshToken,
       );
 
-      await this.prismaService.refreshToken.delete({
-        where: {
-          token: body.refreshToken,
-        },
-      });
+      await this.authRepository.deleteRefreshToken(body.refreshToken);
 
       return this.generateTokens(payload.sub);
     } catch {
@@ -149,13 +109,11 @@ export class AuthService {
       );
     }
 
-    await this.prismaService.refreshToken.create({
-      data: {
-        token: refreshToken,
-        userId,
-        deviceId: DEFAULT_DEVICE_ID,
-        expiresAt: new Date(refreshTokenPayload.exp * 1000),
-      },
+    await this.authRepository.createRefreshToken({
+      token: refreshToken,
+      userId,
+      deviceId: DEFAULT_DEVICE_ID,
+      expiresAt: new Date(refreshTokenPayload.exp * 1000),
     });
 
     return {

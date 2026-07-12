@@ -7,15 +7,15 @@ import {
   RefreshTokenDto,
   RefreshTokenResponseDto,
   RegisterDto,
-  UserResponseDto,
-} from './auth.dto';
+  RegisterResponseDto,
+} from './dto/auth.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  @ZodSerializerDto(UserResponseDto)
+  @ZodSerializerDto(RegisterResponseDto)
   register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
