@@ -1,4 +1,4 @@
-﻿import { Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { SignOptions } from 'jsonwebtoken';
 import env from '../../config/env.config';
@@ -15,7 +15,9 @@ export class JwtTokenService {
     });
   }
 
-  signRefreshToken(payload: Pick<TokenPayload, 'sub'>): Promise<string> {
+  signRefreshToken(
+    payload: Pick<TokenPayload, 'sub' | 'jti'>,
+  ): Promise<string> {
     return this.jwtService.signAsync(payload, {
       secret: env.JWT_REFRESH_TOKEN_SECRET,
       expiresIn: env.JWT_REFRESH_TOKEN_EXPIRES_IN as SignOptions['expiresIn'],

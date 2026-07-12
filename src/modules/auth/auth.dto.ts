@@ -64,3 +64,22 @@ const LoginResponseSchema = z.object({
 });
 
 export class LoginResponseDto extends createZodDto(LoginResponseSchema) {}
+
+const RefreshTokenDtoSchema = z
+  .object({
+    refreshToken: z.string().min(1, { message: 'Refresh token is required' }),
+  })
+  .strict();
+
+export type RefreshTokenBody = z.infer<typeof RefreshTokenDtoSchema>;
+
+export class RefreshTokenDto extends createZodDto(RefreshTokenDtoSchema) {}
+
+const RefreshTokenResponseSchema = z.object({
+  accessToken: z.string(),
+  refreshToken: z.string(),
+});
+
+export class RefreshTokenResponseDto extends createZodDto(
+  RefreshTokenResponseSchema,
+) {}

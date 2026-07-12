@@ -4,6 +4,8 @@ import { AuthService } from './auth.service';
 import {
   LoginDto,
   LoginResponseDto,
+  RefreshTokenDto,
+  RefreshTokenResponseDto,
   RegisterDto,
   UserResponseDto,
 } from './auth.dto';
@@ -22,5 +24,11 @@ export class AuthController {
   @ZodSerializerDto(LoginResponseDto)
   login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @Post('refresh-token')
+  @ZodSerializerDto(RefreshTokenResponseDto)
+  refreshToken(@Body() body: RefreshTokenDto) {
+    return this.authService.refreshToken(body);
   }
 }

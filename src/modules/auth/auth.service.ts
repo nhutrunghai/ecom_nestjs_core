@@ -1,10 +1,11 @@
-﻿import {
+import {
   ConflictException,
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { UserStatus } from 'generated/prisma/client';
 import {
   isPrismaErrorCode,
@@ -13,7 +14,7 @@ import {
 import { PrismaService } from 'src/database/prisma.service';
 import { HashingService } from 'src/shared/hashing/hashing.service';
 import { JwtTokenService } from 'src/shared/jwt/jwt-token.service';
-import { LoginBody, RegisterBody } from './auth.dto';
+import { LoginBody, RefreshTokenBody, RegisterBody } from './auth.dto';
 import { RoleService } from './role.service';
 
 type AuthTokens = {
@@ -112,6 +113,24 @@ export class AuthService {
     };
   }
 
+  async refreshToken(body: RefreshTokenBody): Promise<AuthTokens> {
+    try {
+      const payload = await this.jwtTokenService.verifyRefreshToken(
+        body.refreshToken,
+      );
+
+      await this.prismaService.refreshToken.delete({
+        where: {
+          token: body.refreshToken,
+        },
+      });
+
+      return this.generateTokens(payload.sub);
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
   private async generateTokens(userId: number): Promise<AuthTokens> {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtTokenService.signAccessToken({
@@ -119,6 +138,7 @@ export class AuthService {
       }),
       this.jwtTokenService.signRefreshToken({
         sub: userId,
+        jti: randomUUID(),
       }),
     ]);
 
