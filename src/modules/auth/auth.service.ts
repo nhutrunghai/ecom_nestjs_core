@@ -6,6 +6,7 @@ import {
   InternalServerErrorException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { addMilliseconds } from 'date-fns';
 import { UserStatus, VerificationCodeType } from 'generated/prisma/client';
 import ms, { StringValue } from 'ms';
@@ -14,12 +15,13 @@ import {
   isPrismaErrorCode,
   PrismaErrorCode,
 } from 'src/database/prisma-error.util';
-import { HashingService } from 'src/shared/hashing/hashing.service';
+import { HashingService } from 'src/shared/hashings/hashing.service';
 import { generateOtpCode } from 'src/shared/helpers';
 import { JwtTokenService } from 'src/shared/jwt/jwt-token.service';
 import { AuthRepository } from './auth.repo';
 import {
   AuthTokens,
+  ForgotPasswordBody,
   LoginBody,
   RefreshTokenBody,
   RegisterBody,
@@ -27,7 +29,10 @@ import {
 } from './entities/auth.model';
 import { RoleService } from './role.service';
 
-const DEFAULT_DEVICE_ID = 2;
+type RequestDeviceInfo = {
+  userAgent: string;
+  ip: string;
+};
 
 @Injectable()
 export class AuthService {
@@ -97,7 +102,44 @@ export class AuthService {
     }
   }
 
-  async login(body: LoginBody) {
+  async forgotPassword(body: ForgotPasswordBody) {
+    const verificationCode =
+      await this.authRepository.findValidVerificationCode({
+        email: body.email,
+        code: body.code,
+        type: VerificationCodeType.FORGOT_PASSWORD,
+      });
+
+    if (!verificationCode) {
+      throw new BadRequestException('Invalid or expired OTP code');
+    }
+
+    const user = await this.authRepository.findUserByEmail(body.email);
+
+    if (!user) {
+      throw new BadRequestException('Invalid or expired OTP code');
+    }
+
+    const hashedPassword = await this.hashingService.hash(body.newPassword);
+
+    await this.authRepository.updateUserPassword({
+      userId: user.id,
+      hashedPassword,
+    });
+
+    await this.authRepository.deleteVerificationCode({
+      email: body.email,
+      type: VerificationCodeType.FORGOT_PASSWORD,
+    });
+
+    await this.authRepository.deleteRefreshTokensByUserId(user.id);
+    await this.authRepository.deactivateDevicesByUserId(user.id);
+
+    return {
+      message: 'Password reset successfully',
+    };
+  }
+  async login(body: LoginBody, deviceInfo: RequestDeviceInfo) {
     const user = await this.authRepository.findUserByEmail(body.email);
 
     if (!user) {
@@ -117,7 +159,18 @@ export class AuthService {
       throw new ForbiddenException('User is not active');
     }
 
-    const tokens = await this.generateTokens(user.id);
+    const device = await this.authRepository.createDevice({
+      userId: user.id,
+      userAgent: deviceInfo.userAgent,
+      ip: deviceInfo.ip,
+    });
+
+    const tokens = await this.generateTokens({
+      userId: user.id,
+      roleId: user.roleId,
+      deviceId: device.id,
+    });
+
     const { password, totpSecret, ...safeUser } = user;
 
     return {
@@ -126,27 +179,74 @@ export class AuthService {
     };
   }
 
-  async refreshToken(body: RefreshTokenBody): Promise<AuthTokens> {
+  async logout(body: RefreshTokenBody) {
+    try {
+      await this.jwtTokenService.verifyRefreshToken(body.refreshToken);
+
+      const deletedRefreshToken = await this.authRepository.deleteRefreshToken(
+        body.refreshToken,
+      );
+
+      await this.authRepository.deactivateDevice(deletedRefreshToken.deviceId);
+
+      return {
+        message: 'Logout successfully',
+      };
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+  async refreshToken(
+    body: RefreshTokenBody,
+    deviceInfo: RequestDeviceInfo,
+  ): Promise<AuthTokens> {
     try {
       const payload = await this.jwtTokenService.verifyRefreshToken(
         body.refreshToken,
       );
 
-      await this.authRepository.deleteRefreshToken(body.refreshToken);
+      const deletedRefreshToken = await this.authRepository.deleteRefreshToken(
+        body.refreshToken,
+      );
 
-      return this.generateTokens(payload.sub);
+      await this.authRepository.updateDeviceActivity({
+        id: deletedRefreshToken.deviceId,
+        userAgent: deviceInfo.userAgent,
+        ip: deviceInfo.ip,
+        isActive: true,
+      });
+
+      const user = await this.authRepository.findUserById(payload.sub);
+
+      if (!user) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      return this.generateTokens({
+        userId: user.id,
+        roleId: user.roleId,
+        deviceId: deletedRefreshToken.deviceId,
+      });
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
 
-  private async generateTokens(userId: number): Promise<AuthTokens> {
+  private async generateTokens(data: {
+    userId: number;
+    roleId: number;
+    deviceId: number;
+  }): Promise<AuthTokens> {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtTokenService.signAccessToken({
-        sub: userId,
+        sub: data.userId,
+        roleId: data.roleId,
+        deviceId: data.deviceId,
+        jti: randomUUID(),
       }),
       this.jwtTokenService.signRefreshToken({
-        sub: userId,
+        sub: data.userId,
+        jti: randomUUID(),
       }),
     ]);
 
@@ -161,8 +261,8 @@ export class AuthService {
 
     await this.authRepository.createRefreshToken({
       token: refreshToken,
-      userId,
-      deviceId: DEFAULT_DEVICE_ID,
+      userId: data.userId,
+      deviceId: data.deviceId,
       expiresAt: new Date(refreshTokenPayload.exp * 1000),
     });
 

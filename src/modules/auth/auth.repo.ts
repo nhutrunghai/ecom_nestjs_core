@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { VerificationCodeType } from 'generated/prisma/client';
 import { PrismaService } from 'src/database/prisma.service';
-import { RegisterBody } from './entities/auth.model';
+import {
+  CreateDeviceData,
+  RegisterBody,
+  UpdateDeviceActivityData,
+} from './entities/auth.model';
 
 export const userResponseSelect = {
   id: true,
@@ -35,6 +39,14 @@ export class AuthRepository {
     });
   }
 
+  findUserById(id: number) {
+    return this.prismaService.user.findUnique({
+      where: {
+        id,
+      },
+    });
+  }
+
   findUserByEmail(email: string) {
     return this.prismaService.user.findUnique({
       where: {
@@ -43,6 +55,65 @@ export class AuthRepository {
     });
   }
 
+  createDevice(data: CreateDeviceData) {
+    return this.prismaService.device.create({
+      data,
+    });
+  }
+
+  updateDeviceActivity(data: UpdateDeviceActivityData) {
+    return this.prismaService.device.update({
+      where: {
+        id: data.id,
+      },
+      data: {
+        userAgent: data.userAgent,
+        ip: data.ip,
+        isActive: data.isActive,
+      },
+    });
+  }
+
+  deactivateDevice(id: number) {
+    return this.prismaService.device.update({
+      where: {
+        id,
+      },
+      data: {
+        isActive: false,
+      },
+    });
+  }
+
+  updateUserPassword(data: { userId: number; hashedPassword: string }) {
+    return this.prismaService.user.update({
+      where: {
+        id: data.userId,
+      },
+      data: {
+        password: data.hashedPassword,
+      },
+    });
+  }
+
+  deleteRefreshTokensByUserId(userId: number) {
+    return this.prismaService.refreshToken.deleteMany({
+      where: {
+        userId,
+      },
+    });
+  }
+
+  deactivateDevicesByUserId(userId: number) {
+    return this.prismaService.device.updateMany({
+      where: {
+        userId,
+      },
+      data: {
+        isActive: false,
+      },
+    });
+  }
   upsertVerificationCode(data: {
     email: string;
     code: string;

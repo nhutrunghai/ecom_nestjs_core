@@ -4,7 +4,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../generated/prisma/client';
 import { UserStatus } from '../generated/prisma/enums';
 import { RoleName } from '../src/shared/constants/role.constants';
-import { HashingService } from '../src/shared/hashing/hashing.service';
+import { HashingService } from '../src/shared/hashings/hashing.service';
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
 });

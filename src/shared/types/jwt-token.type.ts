@@ -1,11 +1,17 @@
-﻿export type JwtRegisteredPayload = {
+export type JwtRegisteredPayload = {
   iat?: number;
   exp?: number;
   jti?: string;
 };
 
-export type TokenPayload = JwtRegisteredPayload & {
+export type AccessTokenPayload = JwtRegisteredPayload & {
+  sub: number;
+  roleId: number;
+  deviceId: number;
+};
+
+export type RefreshTokenPayload = JwtRegisteredPayload & {
   sub: number;
 };
 
-export type RequestUser = TokenPayload;
+export type RequestUser = AccessTokenPayload;

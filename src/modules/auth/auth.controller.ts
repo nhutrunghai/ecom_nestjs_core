@@ -1,9 +1,16 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Ip, Post, UseGuards } from '@nestjs/common';
+import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
+import { UserAgent } from 'src/shared/decorators/user-agent.decorator';
+import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
+import type { RequestUser } from 'src/shared/types/jwt-token.type';
 import { ZodSerializerDto } from 'nestjs-zod';
 import { AuthService } from './auth.service';
 import {
+  ForgotPasswordDto,
+  ForgotPasswordResponseDto,
   LoginDto,
   LoginResponseDto,
+  LogoutResponseDto,
   RefreshTokenDto,
   RefreshTokenResponseDto,
   RegisterDto,
@@ -16,6 +23,11 @@ import {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  me(@CurrentUser() user: RequestUser) {
+    return user;
+  }
   @Post('otp')
   @ZodSerializerDto(SendOtpResponseDto)
   sendOtp(@Body() body: SendOtpDto) {
@@ -28,15 +40,39 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
+  @Post('forgot-password')
+  @ZodSerializerDto(ForgotPasswordResponseDto)
+  forgotPassword(@Body() body: ForgotPasswordDto) {
+    return this.authService.forgotPassword(body);
+  }
   @Post('login')
   @ZodSerializerDto(LoginResponseDto)
-  login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  login(
+    @Body() loginDto: LoginDto,
+    @UserAgent() userAgent: string,
+    @Ip() ip: string,
+  ) {
+    return this.authService.login(loginDto, {
+      userAgent,
+      ip,
+    });
   }
 
+  @Post('logout')
+  @ZodSerializerDto(LogoutResponseDto)
+  logout(@Body() body: RefreshTokenDto) {
+    return this.authService.logout(body);
+  }
   @Post('refresh-token')
   @ZodSerializerDto(RefreshTokenResponseDto)
-  refreshToken(@Body() body: RefreshTokenDto) {
-    return this.authService.refreshToken(body);
+  refreshToken(
+    @Body() body: RefreshTokenDto,
+    @UserAgent() userAgent: string,
+    @Ip() ip: string,
+  ) {
+    return this.authService.refreshToken(body, {
+      userAgent,
+      ip,
+    });
   }
 }

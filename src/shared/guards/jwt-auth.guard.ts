@@ -1,10 +1,11 @@
-﻿import {
+import {
   CanActivate,
   ExecutionContext,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
+import { PrismaService } from 'src/database/prisma.service';
 import { JwtTokenService } from '../jwt/jwt-token.service';
 import { RequestUser } from '../types/jwt-token.type';
 
@@ -14,7 +15,10 @@ type RequestWithUser = Request & {
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private readonly jwtTokenService: JwtTokenService) {}
+  constructor(
+    private readonly jwtTokenService: JwtTokenService,
+    private readonly prismaService: PrismaService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<RequestWithUser>();
@@ -26,6 +30,18 @@ export class JwtAuthGuard implements CanActivate {
 
     try {
       const payload = await this.jwtTokenService.verifyAccessToken(token);
+
+      const device = await this.prismaService.device.findFirst({
+        where: {
+          id: payload.deviceId,
+          userId: payload.sub,
+          isActive: true,
+        },
+      });
+
+      if (!device) {
+        throw new UnauthorizedException('Device session is inactive');
+      }
 
       request.user = payload;
 
