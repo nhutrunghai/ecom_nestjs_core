@@ -1,4 +1,4 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './database/prisma.module';
 import appConfig from './config/app.config';
@@ -7,6 +7,7 @@ import jwtConfig from './config/jwt.config';
 import { validateEnv } from './config/env.config';
 import { SharedModule } from './shared/shared.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { LanguageModule } from './modules/languages/language.module';
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
@@ -21,6 +22,7 @@ import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
     PrismaModule,
     SharedModule,
     AuthModule,
+    LanguageModule,
   ],
   controllers: [],
   providers: [
@@ -32,10 +34,10 @@ import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
       provide: APP_FILTER,
       useClass: HttpExceptionFilter,
     },
-    { 
-      provide: APP_INTERCEPTOR, 
-      useClass: ZodSerializerInterceptor 
-    }
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ZodSerializerInterceptor,
+    },
   ],
 })
 export class AppModule {}
