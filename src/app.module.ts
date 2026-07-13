@@ -8,6 +8,7 @@ import { validateEnv } from './config/env.config';
 import { SharedModule } from './shared/shared.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { LanguageModule } from './modules/languages/language.module';
+import { PermissionModule } from './modules/permissions/permission.module';
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ZodSerializerInterceptor, ZodValidationPipe } from 'nestjs-zod';
 import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
@@ -23,6 +24,7 @@ import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
     SharedModule,
     AuthModule,
     LanguageModule,
+    PermissionModule,
   ],
   controllers: [],
   providers: [
