@@ -1,6 +1,9 @@
 import { createZodDto } from 'nestjs-zod';
 import {
   CreateDeviceSchema,
+  Disable2FaBodySchema,
+  Disable2FaResponseSchema,
+  Enable2FaResponseSchema,
   ForgotPasswordBodySchema,
   ForgotPasswordResponseSchema,
   LoginBodySchema,
@@ -19,6 +22,15 @@ export class RegisterDto extends createZodDto(RegisterBodySchema) {}
 
 export class RegisterResponseDto extends createZodDto(UserResponseSchema) {}
 
+export class Enable2FaResponseDto extends createZodDto(
+  Enable2FaResponseSchema,
+) {}
+
+export class Disable2FaDto extends createZodDto(Disable2FaBodySchema) {}
+
+export class Disable2FaResponseDto extends createZodDto(
+  Disable2FaResponseSchema,
+) {}
 export class ForgotPasswordDto extends createZodDto(ForgotPasswordBodySchema) {}
 
 export class ForgotPasswordResponseDto extends createZodDto(

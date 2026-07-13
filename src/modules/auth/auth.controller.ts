@@ -6,6 +6,9 @@ import type { RequestUser } from 'src/shared/types/jwt-token.type';
 import { ZodSerializerDto } from 'nestjs-zod';
 import { AuthService } from './auth.service';
 import {
+  Disable2FaDto,
+  Disable2FaResponseDto,
+  Enable2FaResponseDto,
   ForgotPasswordDto,
   ForgotPasswordResponseDto,
   LoginDto,
@@ -23,6 +26,19 @@ import {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Post('2fa/enable')
+  @UseGuards(JwtAuthGuard)
+  @ZodSerializerDto(Enable2FaResponseDto)
+  enable2Fa(@CurrentUser() user: RequestUser) {
+    return this.authService.enable2Fa(user.sub);
+  }
+
+  @Post('2fa/disable')
+  @UseGuards(JwtAuthGuard)
+  @ZodSerializerDto(Disable2FaResponseDto)
+  disable2Fa(@CurrentUser() user: RequestUser, @Body() body: Disable2FaDto) {
+    return this.authService.disable2Fa(user.sub, body);
+  }
   @Get('me')
   @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: RequestUser) {

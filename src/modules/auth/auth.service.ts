@@ -10,6 +10,8 @@ import { randomUUID } from 'node:crypto';
 import { addMilliseconds } from 'date-fns';
 import { UserStatus, VerificationCodeType } from 'generated/prisma/client';
 import ms, { StringValue } from 'ms';
+import { generateSecret, generateURI, verify } from 'otplib';
+import QRCode from 'qrcode';
 import env from 'src/config/env.config';
 import {
   isPrismaErrorCode,
@@ -21,6 +23,7 @@ import { JwtTokenService } from 'src/shared/jwt/jwt-token.service';
 import { AuthRepository } from './auth.repo';
 import {
   AuthTokens,
+  Disable2FaBody,
   ForgotPasswordBody,
   LoginBody,
   RefreshTokenBody,
@@ -102,6 +105,66 @@ export class AuthService {
     }
   }
 
+  async enable2Fa(userId: number) {
+    const user = await this.authRepository.findUserById(userId);
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid user');
+    }
+
+    if (user.totpSecret) {
+      throw new BadRequestException('2FA is already enabled');
+    }
+
+    const secret = generateSecret();
+    const otpAuthUrl = generateURI({
+      issuer: 'Ecom NestJS',
+      label: user.email,
+      secret,
+    });
+    const qrCodeUrl = await QRCode.toDataURL(otpAuthUrl);
+
+    await this.authRepository.updateUserTotpSecret({
+      userId: user.id,
+      totpSecret: secret,
+    });
+
+    return {
+      secret,
+      otpAuthUrl,
+      qrCodeUrl,
+    };
+  }
+
+  async disable2Fa(userId: number, body: Disable2FaBody) {
+    const user = await this.authRepository.findUserById(userId);
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid user');
+    }
+
+    if (!user.totpSecret) {
+      throw new BadRequestException('2FA is not enabled');
+    }
+
+    const verifyResult = await verify({
+      token: body.code,
+      secret: user.totpSecret,
+    });
+
+    if (!verifyResult.valid) {
+      throw new UnauthorizedException('Invalid 2FA code');
+    }
+
+    await this.authRepository.updateUserTotpSecret({
+      userId: user.id,
+      totpSecret: null,
+    });
+
+    return {
+      message: '2FA disabled successfully',
+    };
+  }
   async forgotPassword(body: ForgotPasswordBody) {
     const verificationCode =
       await this.authRepository.findValidVerificationCode({
@@ -159,6 +222,20 @@ export class AuthService {
       throw new ForbiddenException('User is not active');
     }
 
+    if (user.totpSecret) {
+      if (!body.code) {
+        throw new UnauthorizedException('2FA code is required');
+      }
+
+      const verifyResult = await verify({
+        token: body.code,
+        secret: user.totpSecret,
+      });
+
+      if (!verifyResult.valid) {
+        throw new UnauthorizedException('Invalid 2FA code');
+      }
+    }
     const device = await this.authRepository.createDevice({
       userId: user.id,
       userAgent: deviceInfo.userAgent,

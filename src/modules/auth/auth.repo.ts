@@ -85,6 +85,16 @@ export class AuthRepository {
     });
   }
 
+  updateUserTotpSecret(data: { userId: number; totpSecret: string | null }) {
+    return this.prismaService.user.update({
+      where: {
+        id: data.userId,
+      },
+      data: {
+        totpSecret: data.totpSecret,
+      },
+    });
+  }
   updateUserPassword(data: { userId: number; hashedPassword: string }) {
     return this.prismaService.user.update({
       where: {

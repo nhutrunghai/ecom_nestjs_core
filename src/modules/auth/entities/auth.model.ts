@@ -98,6 +98,10 @@ export const LoginBodySchema = UserSchema.pick({
 })
   .extend({
     password: z.string().min(1, { message: 'Password is required' }),
+    code: z
+      .string()
+      .regex(/^\d{6}$/, { message: '2FA code must be 6 digits' })
+      .optional(),
   })
   .strict();
 
@@ -122,6 +126,21 @@ export const LogoutResponseSchema = z.object({
   message: z.string(),
 });
 
+export const Enable2FaResponseSchema = z.object({
+  secret: z.string(),
+  otpAuthUrl: z.string(),
+  qrCodeUrl: z.string(),
+});
+
+export const Disable2FaBodySchema = z
+  .object({
+    code: z.string().regex(/^\d{6}$/, { message: '2FA code must be 6 digits' }),
+  })
+  .strict();
+
+export const Disable2FaResponseSchema = z.object({
+  message: z.string(),
+});
 export const SendOtpBodySchema = z
   .object({
     email: z.string().email({ message: 'Email must be a valid email' }),
@@ -169,6 +188,12 @@ export type RefreshTokenBody = z.infer<typeof RefreshTokenBodySchema>;
 export type RefreshTokenResponse = z.infer<typeof RefreshTokenResponseSchema>;
 
 export type LogoutResponse = z.infer<typeof LogoutResponseSchema>;
+
+export type Enable2FaResponse = z.infer<typeof Enable2FaResponseSchema>;
+
+export type Disable2FaBody = z.infer<typeof Disable2FaBodySchema>;
+
+export type Disable2FaResponse = z.infer<typeof Disable2FaResponseSchema>;
 
 export type SendOtpBody = z.infer<typeof SendOtpBodySchema>;
 
