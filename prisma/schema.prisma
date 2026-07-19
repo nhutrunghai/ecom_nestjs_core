@@ -198,6 +198,7 @@ model Permission {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
+  @@unique([method, path], map: "Permission_method_path_active_key", where: { deletedAt: null })
   @@index([deletedAt])
 }
 

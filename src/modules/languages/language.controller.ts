@@ -9,8 +9,10 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ZodSerializerDto } from 'nestjs-zod';
+import { CheckPermission } from 'src/shared/decorators/check-permission.decorator';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
+import { PermissionGuard } from 'src/shared/guards/permission.guard';
 import type { RequestUser } from 'src/shared/types/jwt-token.type';
 import {
   CreateLanguageDto,
@@ -21,7 +23,8 @@ import {
 import { LanguageService } from './language.service';
 
 @Controller('languages')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard)
+@CheckPermission()
 export class LanguageController {
   constructor(private readonly languageService: LanguageService) {}
 

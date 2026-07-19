@@ -10,8 +10,11 @@
   UseGuards,
 } from '@nestjs/common';
 import { ZodSerializerDto } from 'nestjs-zod';
+import { RoleName } from 'src/shared/constants/role.constants';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
+import { Roles } from 'src/shared/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/shared/guards/roles.guard';
 import type { RequestUser } from 'src/shared/types/jwt-token.type';
 import {
   CreatePermissionDto,
@@ -22,7 +25,8 @@ import {
 import { PermissionService } from './permission.service';
 
 @Controller('permissions')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(RoleName.ADMIN)
 export class PermissionController {
   constructor(private readonly permissionService: PermissionService) {}
 
