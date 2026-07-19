@@ -4,14 +4,16 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider     = "prisma-client"
-  output       = "../generated/prisma"
-  moduleFormat = "cjs"
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  moduleFormat    = "cjs"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
   provider = "postgresql"
 }
+
 model Language {
   id                   String                @id @db.VarChar(10)
   name                 String                @db.VarChar(500)
@@ -36,7 +38,7 @@ model Language {
 
 model User {
   id          Int     @id @default(autoincrement())
-  email       String  @unique @db.VarChar(500)
+  email       String  @db.VarChar(500)
   name        String  @db.VarChar(500)
   password    String  @db.VarChar(500)
   phoneNumber String  @db.VarChar(50)
@@ -112,6 +114,7 @@ model User {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
+  @@unique([email], map: "User_email_active_key", where: { deletedAt: null })
   @@index([deletedAt])
 }
 
@@ -200,7 +203,7 @@ model Permission {
 
 model Role {
   id          Int          @id @default(autoincrement())
-  name        String       @unique @db.VarChar(500)
+  name        String       @db.VarChar(500)
   description String       @default("")
   isActive    Boolean      @default(true)
   permissions Permission[]
@@ -217,6 +220,7 @@ model Role {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
+  @@unique([name], map: "Role_name_active_key", where: { deletedAt: null })
   @@index([deletedAt])
 }
 
