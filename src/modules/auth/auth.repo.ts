@@ -85,6 +85,90 @@ export class AuthRepository {
     });
   }
 
+  findActiveDevicesByUserId(userId: number) {
+    return this.prismaService.device.findMany({
+      where: {
+        userId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        userId: true,
+        userAgent: true,
+        ip: true,
+        lastActive: true,
+        createdAt: true,
+        isActive: true,
+      },
+      orderBy: {
+        lastActive: 'desc',
+      },
+    });
+  }
+
+  async logoutDevice(userId: number, deviceId: number) {
+    return this.prismaService.$transaction(async (tx) => {
+      const device = await tx.device.findFirst({
+        where: {
+          id: deviceId,
+          userId,
+          isActive: true,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!device) {
+        return false;
+      }
+
+      await tx.refreshToken.deleteMany({
+        where: {
+          userId,
+          deviceId,
+        },
+      });
+
+      await tx.device.update({
+        where: {
+          id: deviceId,
+        },
+        data: {
+          isActive: false,
+        },
+      });
+
+      return true;
+    });
+  }
+
+  async logoutOtherDevices(userId: number, currentDeviceId: number) {
+    return this.prismaService.$transaction(async (tx) => {
+      await tx.refreshToken.deleteMany({
+        where: {
+          userId,
+          deviceId: {
+            not: currentDeviceId,
+          },
+        },
+      });
+
+      return tx.device.updateMany({
+        where: {
+          userId,
+          id: {
+            not: currentDeviceId,
+          },
+          isActive: true,
+        },
+        data: {
+          isActive: false,
+        },
+      });
+    });
+  }
+
   updateUserTotpSecret(data: { userId: number; totpSecret: string | null }) {
     return this.prismaService.user.update({
       where: {

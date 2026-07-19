@@ -273,6 +273,37 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
+
+  async getActiveDevices(userId: number, currentDeviceId: number) {
+    const devices = await this.authRepository.findActiveDevicesByUserId(userId);
+
+    return devices.map((device) => ({
+      ...device,
+      isCurrent: device.id === currentDeviceId,
+    }));
+  }
+
+  async logoutDevice(userId: number, deviceId: number) {
+    const loggedOut = await this.authRepository.logoutDevice(userId, deviceId);
+
+    if (!loggedOut) {
+      throw new ForbiddenException(
+        'Device does not belong to this user or is already logged out',
+      );
+    }
+
+    return {
+      message: 'Device logged out successfully',
+    };
+  }
+
+  async logoutOtherDevices(userId: number, currentDeviceId: number) {
+    await this.authRepository.logoutOtherDevices(userId, currentDeviceId);
+
+    return {
+      message: 'Other devices logged out successfully',
+    };
+  }
   async refreshToken(
     body: RefreshTokenBody,
     deviceInfo: RequestDeviceInfo,

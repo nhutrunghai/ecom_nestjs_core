@@ -1,6 +1,7 @@
 import { createZodDto } from 'nestjs-zod';
 import {
   CreateDeviceSchema,
+  DeviceResponseSchema,
   Disable2FaBodySchema,
   Disable2FaResponseSchema,
   Enable2FaResponseSchema,
@@ -58,3 +59,5 @@ export class CreateDeviceDto extends createZodDto(CreateDeviceSchema) {}
 export class UpdateDeviceActivityDto extends createZodDto(
   UpdateDeviceActivitySchema,
 ) {}
+
+export class DeviceResponseDto extends createZodDto(DeviceResponseSchema) {}

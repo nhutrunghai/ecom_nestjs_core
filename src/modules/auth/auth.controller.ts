@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Ip, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Ip,
+  Param,
+  ParseIntPipe,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { CurrentUser } from 'src/shared/decorators/current-user.decorator';
 import { UserAgent } from 'src/shared/decorators/user-agent.decorator';
 import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
@@ -16,6 +25,7 @@ import {
   LogoutResponseDto,
   RefreshTokenDto,
   RefreshTokenResponseDto,
+  DeviceResponseDto,
   RegisterDto,
   RegisterResponseDto,
   SendOtpDto,
@@ -43,6 +53,28 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   me(@CurrentUser() user: RequestUser) {
     return user;
+  }
+
+  @Get('devices')
+  @UseGuards(JwtAuthGuard)
+  @ZodSerializerDto([DeviceResponseDto])
+  getActiveDevices(@CurrentUser() user: RequestUser) {
+    return this.authService.getActiveDevices(user.sub, user.deviceId);
+  }
+
+  @Post('devices/:deviceId/logout')
+  @UseGuards(JwtAuthGuard)
+  logoutDevice(
+    @CurrentUser() user: RequestUser,
+    @Param('deviceId', ParseIntPipe) deviceId: number,
+  ) {
+    return this.authService.logoutDevice(user.sub, deviceId);
+  }
+
+  @Post('devices/logout-others')
+  @UseGuards(JwtAuthGuard)
+  logoutOtherDevices(@CurrentUser() user: RequestUser) {
+    return this.authService.logoutOtherDevices(user.sub, user.deviceId);
   }
   @Post('otp')
   @ZodSerializerDto(SendOtpResponseDto)

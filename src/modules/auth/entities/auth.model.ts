@@ -33,6 +33,10 @@ export const DeviceSchema = z.object({
   isActive: z.boolean(),
 });
 
+export const DeviceResponseSchema = DeviceSchema.extend({
+  isCurrent: z.boolean(),
+});
+
 export const CreateDeviceSchema = DeviceSchema.pick({
   userId: true,
   userAgent: true,
@@ -158,6 +162,8 @@ export const SendOtpResponseSchema = z.object({
 });
 
 export type UserModel = z.infer<typeof UserSchema>;
+
+export type DeviceResponse = z.infer<typeof DeviceResponseSchema>;
 
 export type UserResponse = z.infer<typeof UserResponseSchema>;
 
