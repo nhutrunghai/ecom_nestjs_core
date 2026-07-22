@@ -277,6 +277,7 @@ model ProductTranslation {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
+  @@unique([productId, languageId], map: "ProductTranslation_product_language_active_key", where: { deletedAt: null })
   @@index([deletedAt])
   @@index([productId])
 }
@@ -350,6 +351,7 @@ model SKU {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
+  @@unique([productId, value], map: "SKU_product_value_active_key", where: { deletedAt: null })
   @@index([deletedAt])
   @@index([productId])
 }
@@ -372,6 +374,7 @@ model Brand {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
+  @@unique([name], map: "Brand_name_active_key", where: { deletedAt: null })
   @@index([deletedAt])
 }
 
